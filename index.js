@@ -1,11 +1,11 @@
-const width = window.innerWidth;
-const height = window.innerHeight;
+const width = Math.round(window.innerWidth / 2);
+const height = Math.round(window.innerHeight / 2);
 
+const output = document.querySelector("canvas");
 const buffer = new OffscreenCanvas(width, height);
-const screen = document.querySelector("#screen");
 
+const outputCtx = output.getContext("2d", { alpha: false });
 const bufferCtx = buffer.getContext("2d", { alpha: false });
-const screenCtx = screen.getContext("2d", { alpha: false });
 
 const middleWidth = Math.round(width / 2);
 const middleHeight = Math.round(height / 2);
@@ -17,6 +17,8 @@ const nextCells = new Uint8Array(width * height);
 const EMPTY = 0;
 const ALIVE = 1;
 const DEAD = 2;
+
+const BIRTH = 0.9;
 
 const getCell = (x, y, array = cells) => {
   if (x < 0 || y < 0 || x > width || y > height) return EMPTY;
@@ -50,7 +52,7 @@ const setCells = (x1, y1, x2, y2, status) => {
 const randomizeCells = () => {
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
-      if (Math.random() > 0.5) {
+      if (Math.random() > BIRTH) {
         setCell(x, y, ALIVE);
       }
     }
@@ -87,7 +89,7 @@ const getColor = (status) => {
 };
 
 const draw = () => {
-  const startRendering = Date.now();
+  const start = Date.now();
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       const status = getCell(x, y);
@@ -99,15 +101,13 @@ const draw = () => {
       }
     }
   }
-  console.log("rendering time", Date.now() - startRendering);
-  const startDraw = Date.now();
-  screenCtx.drawImage(buffer, 0, 0);
-  console.log("drawing time", Date.now() - startDraw);
+  console.log("rendering time", Date.now() - start);
+  outputCtx.drawImage(buffer, 0, 0);
 };
 
 const init = () => {
-  screen.width = width;
-  screen.height = height;
+  output.width = window.innerWidth;
+  output.height = window.innerHeight;
 
   cells.fill(EMPTY);
   bufferCells.fill(EMPTY);
@@ -118,6 +118,7 @@ const init = () => {
   // set canvas to white
   bufferCtx.fillStyle = "white";
   bufferCtx.fillRect(0, 0, width, height);
+  outputCtx.scale(2, 2);
 };
 
 const doLoop = () => {

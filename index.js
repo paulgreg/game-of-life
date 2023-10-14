@@ -1,5 +1,19 @@
-const width = Math.round(window.innerWidth / 2);
-const height = Math.round(window.innerHeight / 2);
+const params = new URLSearchParams(document.location.search);
+
+const SCALE_RATIO = params.get("scale") ?? 2;
+const LOOP = params.get("loop") ?? 0;
+const BIRTH = params.get("birth") ?? 0.9;
+
+const DEFAULT_COLOR = "white";
+const ALIVE_COLOR = "green";
+const DEAD_COLOR = "yellow";
+
+const EMPTY = 0;
+const ALIVE = 1;
+const DEAD = 2;
+
+const width = Math.round(window.innerWidth / SCALE_RATIO);
+const height = Math.round(window.innerHeight / SCALE_RATIO);
 
 const output = document.querySelector("canvas");
 const buffer = new OffscreenCanvas(width, height);
@@ -14,18 +28,12 @@ const bufferCells = new Uint8Array(width * height);
 const cells = new Uint8Array(width * height);
 const nextCells = new Uint8Array(width * height);
 
-const EMPTY = 0;
-const ALIVE = 1;
-const DEAD = 2;
-
-const BIRTH = 0.9;
-
 const getCell = (x, y, array = cells) => {
   if (x < 0 || y < 0 || x > width || y > height) return EMPTY;
   return array[y * width + x];
 };
 
-const getNeighbors = (x, y) => {
+const getNeighbours = (x, y) => {
   const a = getCell(x - 1, y - 1);
   const b = getCell(x + 0, y - 1);
   const c = getCell(x + 1, y - 1);
@@ -37,7 +45,7 @@ const getNeighbors = (x, y) => {
   return [a, b, c, d, e, f, g, h];
 };
 
-const countNeighbors = (x, y) => getNeighbors(x, y).reduce((acc, cell) => acc + (cell === ALIVE ? 1 : 0), 0);
+const countNeighbours = (x, y) => getNeighbours(x, y).reduce((acc, cell) => acc + (cell === ALIVE ? 1 : 0), 0);
 
 const setCell = (x, y, status, array = cells) => (array[y * width + x] = status);
 
@@ -58,18 +66,17 @@ const randomizeCells = () => {
     }
   }
 };
+
 const updateCells = () => {
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
-      const n = countNeighbors(x, y);
+      const n = countNeighbours(x, y);
       const status = getCell(x, y);
       if (status === ALIVE && (n < 2 || n > 3)) {
         setCell(x, y, DEAD, nextCells);
       } else if (n === 3) {
         setCell(x, y, ALIVE, nextCells);
-      } else if (status === ALIVE && n > 3) {
-        setCell(x, y, DEAD, nextCells);
-      } else {
+      } else if (status === DEAD) {
         setCell(x, y, EMPTY, nextCells);
       }
     }
@@ -79,17 +86,17 @@ const updateCells = () => {
 const getColor = (status) => {
   switch (status) {
     case ALIVE:
-      return "green";
+      return ALIVE_COLOR;
     case DEAD:
-      return "white";
+      return DEAD_COLOR;
     case EMPTY:
     default:
-      return "white";
+      return DEFAULT_COLOR;
   }
 };
 
 const draw = () => {
-  const start = Date.now();
+  // const start = Date.now();
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       const status = getCell(x, y);
@@ -101,7 +108,7 @@ const draw = () => {
       }
     }
   }
-  console.log("rendering time", Date.now() - start);
+  // console.log("rendering time", Date.now() - start);
   outputCtx.drawImage(buffer, 0, 0);
 };
 
@@ -112,20 +119,23 @@ const init = () => {
   cells.fill(EMPTY);
   bufferCells.fill(EMPTY);
 
-  // Draw alive cells
   randomizeCells();
 
-  // set canvas to white
-  bufferCtx.fillStyle = "white";
+  // initialize canvas
+  bufferCtx.fillStyle = DEFAULT_COLOR;
   bufferCtx.fillRect(0, 0, width, height);
-  outputCtx.scale(2, 2);
+  outputCtx.scale(SCALE_RATIO, SCALE_RATIO);
 };
 
 const doLoop = () => {
   updateCells();
   cells.set(nextCells);
   draw();
-  setTimeout(doLoop, 250);
+  if (LOOP === 0) {
+    requestAnimationFrame(doLoop);
+  } else {
+    setTimeout(doLoop, LOOP);
+  }
 };
 
 const start = () => {

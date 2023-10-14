@@ -4,9 +4,11 @@ const SCALE_RATIO = params.get("scale") ?? 2;
 const LOOP = params.get("loop") ?? 0;
 const BIRTH = params.get("birth") ?? 0.9;
 
-const DEFAULT_COLOR = params.get("default") ?? "white";
-const ALIVE_COLOR = params.get("alive") ?? "green";
-const DEAD_COLOR = params.get("dead") ?? "yellow";
+const DEFAULT_COLOR = params.get("default") ?? "black";
+const ALIVE_COLOR = params.get("alive") ?? "blue";
+const DEAD_COLOR = params.get("dead") ?? "violet";
+
+const DEBUG = Boolean(params.get("debug"));
 
 const EMPTY = 0;
 const ALIVE = 1;
@@ -15,21 +17,19 @@ const DEAD = 2;
 const width = Math.round(window.innerWidth / SCALE_RATIO);
 const height = Math.round(window.innerHeight / SCALE_RATIO);
 
-const output = document.querySelector("canvas");
-const buffer = new OffscreenCanvas(width, height);
+const outputCanvas = document.querySelector("canvas");
+const bufferCanvas = new OffscreenCanvas(width, height); // Canvas updated, never displayed
 
-const outputCtx = output.getContext("2d", { alpha: false });
-const bufferCtx = buffer.getContext("2d", { alpha: false });
+const outputCanvasCtx = outputCanvas.getContext("2d", { alpha: false });
+const bufferCanvasCtx = bufferCanvas.getContext("2d", { alpha: false });
 
-const middleWidth = Math.round(width / 2);
-const middleHeight = Math.round(height / 2);
-
-const bufferCells = new Uint8Array(width * height);
+// UInt8Array for performance
 const cells = new Uint8Array(width * height);
-const nextCells = new Uint8Array(width * height);
+const nextCells = new Uint8Array(width * height); // cells updated for next loop
+const bufferCells = new Uint8Array(width * height); // copy of canvas status, to only update cells which have changed
 
 const getCell = (x, y, array = cells) => {
-  if (x < 0 || y < 0 || x > width || y > height) return EMPTY;
+  if (x < 0 || y < 0 || x > width || y > height) return EMPTY; // handle edge
   return array[y * width + x];
 };
 
@@ -73,11 +73,11 @@ const updateCells = () => {
       const n = countNeighbours(x, y);
       const status = getCell(x, y);
       if (status === ALIVE && (n < 2 || n > 3)) {
-        setCell(x, y, DEAD, nextCells);
+        setCell(x, y, DEAD, nextCells); // kill cell if under or over populated
       } else if (n === 3) {
-        setCell(x, y, ALIVE, nextCells);
+        setCell(x, y, ALIVE, nextCells); // birth
       } else if (status === DEAD) {
-        setCell(x, y, EMPTY, nextCells);
+        setCell(x, y, EMPTY, nextCells); // clean dead cells after a loop
       }
     }
   }
@@ -96,51 +96,58 @@ const getColor = (status) => {
 };
 
 const draw = () => {
-  // const start = Date.now();
+  const beforeRender = DEBUG ? Date.now() : 0;
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       const status = getCell(x, y);
       const color = getColor(status);
       if (getCell(x, y, bufferCells) !== status) {
-        bufferCtx.fillStyle = color;
-        bufferCtx.fillRect(x, y, 1, 1);
+        bufferCanvasCtx.fillStyle = color;
+        bufferCanvasCtx.fillRect(x, y, 1, 1);
         setCell(x, y, status, bufferCells);
       }
     }
   }
-  // console.log("rendering time", Date.now() - start);
-  outputCtx.drawImage(buffer, 0, 0);
-};
-
-const init = () => {
-  output.width = window.innerWidth;
-  output.height = window.innerHeight;
-
-  cells.fill(EMPTY);
-  bufferCells.fill(EMPTY);
-
-  randomizeCells();
-
-  // initialize canvas
-  bufferCtx.fillStyle = DEFAULT_COLOR;
-  bufferCtx.fillRect(0, 0, width, height);
-  outputCtx.scale(SCALE_RATIO, SCALE_RATIO);
-};
-
-const doLoop = () => {
-  updateCells();
-  cells.set(nextCells);
-  draw();
-  if (LOOP === 0) {
-    requestAnimationFrame(doLoop);
-  } else {
-    setTimeout(doLoop, LOOP);
+  if (DEBUG) {
+    console.log("rendering time", Date.now() - beforeRender); // to debug rendering time
+  }
+  const beforeDraw = DEBUG ? Date.now() : 0;
+  outputCanvasCtx.drawImage(bufferCanvas, 0, 0);
+  if (DEBUG) {
+    console.log("drawing time", Date.now() - beforeDraw); // to debug drawing time
   }
 };
 
-const start = () => {
-  doLoop();
+const init = () => {
+  // set canvas width/height
+  outputCanvas.width = window.innerWidth;
+  outputCanvas.height = window.innerHeight;
+
+  // initialize cells in arrays
+  cells.fill(EMPTY);
+  bufferCells.fill(EMPTY);
+
+  // init cells randomly
+  randomizeCells();
+
+  // initialize buffer canvas
+  bufferCanvasCtx.fillStyle = DEFAULT_COLOR;
+  bufferCanvasCtx.fillRect(0, 0, width, height);
+  outputCanvasCtx.scale(SCALE_RATIO, SCALE_RATIO);
 };
+
+const doLoop = () => {
+  updateCells(); // now, nextCells contains next frame status
+  cells.set(nextCells); // copy nextCells into cells
+  draw(); // render to visible canvas
+  if (LOOP === 0) {
+    requestAnimationFrame(doLoop); // use requestAnimationFrame by default (ideal for perfs and « sleeps » if tab not visible)
+  } else {
+    setTimeout(doLoop, LOOP); // good old setTimeout if you wan’t to see what’s happening
+  }
+};
+
+const start = () => doLoop();
 
 init();
 start();

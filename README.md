@@ -11,6 +11,6 @@ You can change initial parameter with URLs query parameters :
 - default : background color (white by default)
 - alive : cell alive color (green by default)
 - dead : cell dead color (yellow by default)
+- debug : set it to 1 to display rendering time in console (empty by default)
 
-
-Exemple : https://paulgreg.me/game-of-life/?loop=100&birth=0.5&scale=4&default=black&alive=blue&dead=violet
+Exemple : https://paulgreg.me/game-of-life/?loop=100&birth=0.5&scale=4&default=white&alive=green&dead=yellow

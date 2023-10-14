@@ -4,9 +4,9 @@ const SCALE_RATIO = params.get("scale") ?? 2;
 const LOOP = params.get("loop") ?? 0;
 const BIRTH = params.get("birth") ?? 0.9;
 
-const DEFAULT_COLOR = "white";
-const ALIVE_COLOR = "green";
-const DEAD_COLOR = "yellow";
+const DEFAULT_COLOR = params.get("default") ?? "white";
+const ALIVE_COLOR = params.get("alive") ?? "green";
+const DEAD_COLOR = params.get("dead") ?? "yellow";
 
 const EMPTY = 0;
 const ALIVE = 1;

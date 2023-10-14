@@ -2,7 +2,7 @@ const params = new URLSearchParams(document.location.search);
 
 const SCALE_RATIO = params.get("scale") ?? 2;
 const LOOP = params.get("loop") ?? 0;
-const BIRTH = params.get("birth") ?? 0.9;
+const BIRTH = params.get("birth") ?? 0.7;
 
 const DEFAULT_COLOR = params.get("default") ?? "black";
 const ALIVE_COLOR = params.get("alive") ?? "blue";

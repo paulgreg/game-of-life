@@ -1,6 +1,6 @@
 const params = new URLSearchParams(document.location.search);
 
-const SCALE_RATIO = params.get("scale") ?? 2;
+const SCALE_RATIO = params.get("scale") ?? 4;
 const LOOP = params.get("loop") ?? 0;
 const BIRTH = params.get("birth") ?? 0.7;
 
